@@ -4,13 +4,32 @@ Provide a PHP class which allow you to retrieve easily links of OCTOCAT® png fi
 
 ## Usage
 
+```php
+$provider = new \Plopix\Octodex\Provider();
+$cat = $provider->getRandom();
+print $cat;
+print $provider->getNumber(42);
+```
 
 ## With Symfony as a Service ?
 
+### Create a service
 
+```yml
+# Resources/config/services.yml
+    plopix.octocat.provider:
+        class: Plopix\Octodex\Provider
+        calls:
+          - [setCacheDirPath, [%kernel.cache_dir%]]
+          - [setCacheExpiry, [43200]]
+```
 
+```php
+$provider = new \Plopix\Octodex\Provider();
+$cat = $this->get('plopix.octocat.provider')->getRandom()
+```
 
-### Special notes and other considerations
+## Special notes and other considerations
 
 GITHUB® owns all of the OCTOCAT®, this code just retrieves the data.
 

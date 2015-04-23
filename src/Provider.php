@@ -83,6 +83,20 @@ class Provider
     }
 
     /**
+     * Set the Expiry
+     *
+     * @param integer $expiry expiry in seconds
+     *
+     * @return $this
+     */
+    public function setCacheExpiry($expiry)
+    {
+        $this->cacheExpiry = $expiry;
+
+        return $this;
+    }
+
+    /**
      * Return the presumed cache file path
      *
      * @return string
