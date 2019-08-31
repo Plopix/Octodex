@@ -125,7 +125,7 @@ class Provider
         $doc  = new DOMDocument();
         @$doc->loadHTMLFile($this->url);
         $xpath    = new DOMXpath($doc);
-        $elements = $xpath->query("//*/div[@class='item-shell']");
+        $elements = $xpath->query("//*/div[contains(@class, 'post')]");
 
         if (is_null($elements)) {
             return [ ];
@@ -136,14 +136,14 @@ class Provider
 
             $aTags   = $element->getElementsByTagName('a');
             $imgTags = $element->getElementsByTagName('img');
-            $pTags   = $element->getElementsByTagName('p');
+            $spanTags = $element->getElementsByTagName('span');
             $octocat
-                ->setName(trim($aTags->item(2)->nodeValue))
+                ->setName(trim($aTags->item(1)->nodeValue))
                 ->setPageUrl("https://octodex.github.com" . trim($aTags->item(1)->getAttribute('href')))
                 ->setImageUrl("https://octodex.github.com" . trim($imgTags->item(0)->getAttribute('data-src')))
                 ->setAuthorName(trim($imgTags->item(1)->getAttribute('alt')))
-                ->setAuthorUrl(trim($aTags->item(3)->getAttribute('href')))
-                ->setNumber(trim($pTags->item(0)->nodeValue, " #\n\t\r"));
+                ->setAuthorUrl(trim($aTags->item(2)->getAttribute('href')))
+                ->setNumber(trim($spanTags->item(0)->nodeValue, " #\n\t\r:"));
 
             if ($octocat->getAuthorName() == '') {
                 $octocat->setAuthorName("Simon Oxley");
