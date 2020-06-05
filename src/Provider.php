@@ -4,116 +4,40 @@
  *
  * @package   Plopix\Octodex
  * @author    Sébastien Morel aka Plopix <morel.seb@gmail.com>
- * @copyright 2015 Plopix
+ * @copyright 2020 Plopix
  * @license   https://github.com/Plopix/Octodex/blob/master/LICENSE MIT Licence
  */
 
 namespace Plopix\Octodex;
 
 use DOMDocument;
-use DOMXpath;
+use DOMXPath;
 
-/**
- * Class Provider
- */
-class Provider
+final class Provider
 {
+    private string $url = "https://octodex.github.com";
 
-    /**
-     * The HTML URL
-     *
-     * @var string
-     */
-    protected $url = "https://octodex.github.com";
+    private string $cacheDirPath;
 
-    /**
-     * Cache Directory Path
-     *
-     * @var string
-     */
-    protected $cacheDirPath;
+    private int $cacheExpiry;
 
+    private array $data;
 
-    /**
-     * Cache Expiry
-     *
-     * @var integer
-     */
-    protected $cacheExpiry;
-
-    /**
-     * Data
-     *
-     * @var array
-     */
-    protected $data;
-
-    /**
-     * Constructor
-     */
-    public function __construct()
+    public function __construct(?string $cacheDir = null, int $cacheExpiry = 86400)
     {
-        $this->cacheDirPath = sys_get_temp_dir();
-        $this->data         = null;
-        $this->cacheExpiry  = 86400; // 1 day
+        $this->cacheDirPath = $cacheDir ?? sys_get_temp_dir();
+        $this->data = [];
+        $this->cacheExpiry = $cacheExpiry;
     }
 
-    /**
-     * Get the CacheDirPath
-     *
-     * @return string
-     */
-    protected function getCacheDirPath()
+    private function cachedFilePath(): string
     {
-        return $this->cacheDirPath;
+        return rtrim($this->cacheDirPath, "/")."/plopix_octodex.json";
     }
 
-    /**
-     * Set the CacheDirPath
-     *
-     * @param string $cacheDirPath cacheDirPath
-     *
-     * @return $this
-     */
-    public function setCacheDirPath($cacheDirPath)
+    protected function fetch(): array
     {
-        $this->cacheDirPath = $cacheDirPath;
-
-        return $this;
-    }
-
-    /**
-     * Set the Expiry
-     *
-     * @param integer $expiry expiry in seconds
-     *
-     * @return $this
-     */
-    public function setCacheExpiry($expiry)
-    {
-        $this->cacheExpiry = $expiry;
-
-        return $this;
-    }
-
-    /**
-     * Return the presumed cache file path
-     *
-     * @return string
-     */
-    private function getCachedFilePath()
-    {
-        return rtrim($this->getCacheDirPath(), "/") . "/plopix_octodex.json";
-    }
-
-    /**
-     * Fetch and Parse the content
-     *
-     * @return array
-     */
-    protected function fetch()
-    {
-        $filePath = $this->getCachedFilePath();
+        $filePath = $this->cachedFilePath();
         if (file_exists($filePath)) {
             $cachedData = unserialize(file_get_contents($filePath));
             if ($cachedData['expiry'] > time()) {
@@ -121,91 +45,57 @@ class Provider
             }
         }
 
-        $data = [ ];
-        $doc  = new DOMDocument();
+        $data = [];
+        $doc = new DOMDocument();
         @$doc->loadHTMLFile($this->url);
-        $xpath    = new DOMXpath($doc);
+        $xpath = new DOMXpath($doc);
         $elements = $xpath->query("//*/div[contains(@class, 'post')]");
 
-        if (is_null($elements)) {
-            return [ ];
+        if (\is_null($elements)) {
+            return [];
         }
         foreach ($elements as $element) {
             /** @var DOMDocument $element * */
-            $octocat = new Octocat();
-
-            $aTags   = $element->getElementsByTagName('a');
+            $aTags = $element->getElementsByTagName('a');
             $imgTags = $element->getElementsByTagName('img');
             $spanTags = $element->getElementsByTagName('span');
-            $octocat
-                ->setName(trim($aTags->item(1)->nodeValue))
-                ->setPageUrl("https://octodex.github.com" . trim($aTags->item(1)->getAttribute('href')))
-                ->setImageUrl("https://octodex.github.com" . trim($imgTags->item(0)->getAttribute('data-src')))
-                ->setAuthorName(trim($imgTags->item(1)->getAttribute('alt')))
-                ->setAuthorUrl(trim($aTags->item(2)->getAttribute('href')))
-                ->setNumber(trim($spanTags->item(0)->nodeValue, " #\n\t\r:"));
 
-            if ($octocat->getAuthorName() == '') {
-                $octocat->setAuthorName("Simon Oxley");
-                $octocat->setAuthorUrl("http://www.idokungfoo.com");
-            }
-
-            if ($octocat->getAuthorName() == "Author") {
-                $octocat->setAuthorName(
-                    preg_replace("#^https://github.com/(.*)$#uism", "$1", $octocat->getAuthorUrl())
-                );
-            }
-            $data[] = $octocat;
+            $octocat = new Octocat(
+                trim($aTags->item(1)->nodeValue),
+                "https://octodex.github.com".trim($aTags->item(1)->getAttribute('href')),
+                "https://octodex.github.com".trim($imgTags->item(0)->getAttribute('data-src')),
+                trim($imgTags->item(1)->getAttribute('alt')),
+                trim($aTags->item(2)->getAttribute('href')),
+                trim($spanTags->item(0)->nodeValue, " #\n\t\r:")
+            );
+            $data[] = json_encode($octocat);
         }
-        $cachedData = [ 'expiry' => (time() + $this->cacheExpiry), 'data' => $data ];
+        $cachedData = ['expiry' => (time() + $this->cacheExpiry), 'data' => $data];
         file_put_contents($filePath, serialize($cachedData));
 
         return $data;
     }
 
-    /**
-     * Fetch the data from the URL if empty
-     *
-     * @return $this
-     */
-    protected function load()
+    private function load(): void
     {
-        if ($this->data === null) {
+        if ($this->data === []) {
             $this->data = $this->fetch();
         }
-
-        return $this;
     }
 
-    /**
-     * Random
-     *
-     * @return Octocat
-     */
-    public function getRandom()
+    public function getRandom(): Octocat
     {
         $this->load();
-        $count = count($this->data);
+        $count = \count($this->data);
 
-        return $this->data[rand(0, $count - 1)];
+        return Octocat::createFromJson($this->data[random_int(0, $count - 1)]);
     }
 
-    /**
-     * Return the good Octocat
-     *
-     * @param integer $number Desired number
-     *
-     * @return Octocat
-     */
-    public function getNumber($number)
+    public function getNumber(int $number = 1): Octocat
     {
         $this->load();
-        $count = count($this->data);
+        $count = \count($this->data);
 
-        if ($number > $count) {
-            return null;
-        }
-
-        return $this->data[$count - $number];
+        return Octocat::createFromJson($this->data[abs(($count - $number) % $count)]);
     }
 }

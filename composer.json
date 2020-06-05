@@ -13,18 +13,14 @@
         "MIT"
     ],
     "require": {
-        "php": ">=5.4.0"
-    },
-    "require-dev": {
-      "phpunit/phpunit": "4.6.*",
-      "phpmd/phpmd": "2.*",
-      "sebastian/phpcpd": "2.0.*@dev",
-      "novactive/phpcs-novastandards": "~1.3"
+        "php": ">=7.4",
+        "matthiasnoback/convenient-immutability": "*",
+        "ext-json": "*",
+        "ext-dom": "*"
     },
     "autoload": {
         "psr-4": {
-            "Plopix\\Octodex\\": "src/",
-            "Plopix\\Octodex\\Tests\\": "Tests/"
+            "Plopix\\Octodex\\": "src/"
         }
     }
 }

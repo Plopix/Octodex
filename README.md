@@ -17,16 +17,8 @@ print $provider->getNumber(42);
 
 ```yml
 # Resources/config/services.yml
-    plopix.octocat.provider:
-        class: Plopix\Octodex\Provider
-        calls:
-          - [setCacheDirPath, [%kernel.cache_dir%]]
-          - [setCacheExpiry, [43200]]
-```
-
-```php
-$provider = new \Plopix\Octodex\Provider();
-$cat = $this->get('plopix.octocat.provider')->getRandom()
+    Plopix\Octodex\Provider:
+        arguments: ['%kernel.cache_dir%',43200]
 ```
 
 ## Special notes and other considerations
